@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    url: jdbc:PostgreSQL://localhost:5432/itmo
+  username: postgres
+  password: TG456456tg
+  driver-class-name: org.postgresql.Driver
