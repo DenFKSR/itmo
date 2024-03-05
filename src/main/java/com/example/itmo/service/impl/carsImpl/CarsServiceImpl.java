@@ -1,77 +1,111 @@
 package com.example.itmo.service.impl.carsImpl;
 
+import com.example.itmo.model.db.entity.Car;
+import com.example.itmo.model.db.entity.User;
+import com.example.itmo.model.db.repository.CarsRepo;
 import com.example.itmo.model.dto.request.CarsInfoRequest;
 import com.example.itmo.model.dto.response.CarsInfoResponse;
+import com.example.itmo.model.dto.response.UserInfoResponse;
+import com.example.itmo.model.enums.carsEnums.CarsStatus;
+import com.example.itmo.service.UserService;
+import com.example.itmo.utils.PaginationUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CarsServiceImpl implements CarsService{
+public class CarsServiceImpl implements CarsService {
+
+    private final CarsRepo carsRepo;
     private final ObjectMapper mapper;
-    private  List<CarsInfoResponse> cars = new ArrayList<>();
-    private long id=1;
+    private final UserService userService;
 
 
     @Override
     public CarsInfoResponse createCar(CarsInfoRequest request) {
-        CarsInfoResponse car = mapper.convertValue(request, CarsInfoResponse.class);
-        car.setId(++id);
-        cars.add(car);
-        return null;
+        Car car = mapper.convertValue(request, Car.class);
+        car.setStatus(CarsStatus.CREATED);
+        car.setCreatedAt(LocalDateTime.now());
+        car = carsRepo.save(car);
+        return mapper.convertValue(car, CarsInfoResponse.class);
     }
+
+    private Car getCarDb(Long id) {
+        return carsRepo.findById(id).orElse(new Car());
+    }
+
 
     @Override
     public CarsInfoResponse getCar(Long id) {
-        List<CarsInfoResponse> all= this.cars.stream()
-                .filter(u -> u.getId().equals(id))
-                .collect(Collectors.toList());
-        CarsInfoResponse car = null;
-        if (CollectionUtils.isEmpty(all)){
-            log.error(String.format("user with id: %s not found", id));
-            return car;
-        }
-        return all.get(0);
+        return mapper.convertValue(getCarDb(id), CarsInfoResponse.class);
     }
 
     @Override
     public CarsInfoResponse updateCar(Long id, CarsInfoRequest request) {
-        CarsInfoResponse car = getCar(id);
-        if (Objects.isNull(car)){
-            log.error("user is not delete");
-            return null;
+        Car car = getCarDb(id);
+        if (car.getId() != null) {
+            car.setNameBrand(request.getNameBrand() == null ? car.getNameBrand() : request.getNameBrand());
+            car.setModel(request.getModel() == null ? car.getModel() : request.getModel());
+            car.setNumRegistration(request.getNumRegistration() == null ? car.getNumRegistration() : request.getNumRegistration());
+            car.setTypeEngine(request.getTypeEngine() == null ? car.getTypeEngine() : request.getTypeEngine());
+            car.setEngineСapacity((request.getEngineСapacity() == null) ? car.getEngineСapacity() : request.getEngineСapacity());
+            car.setStatus(CarsStatus.UPDATED);
+            car.setUpdatedAt(LocalDateTime.now());
+            car = carsRepo.save(car);
+        } else {
+            log.error("User not found");
         }
-        CarsInfoResponse response = mapper.convertValue(request, CarsInfoResponse.class);
-        response.setId(car.getId());
-        return response;
-
+        return mapper.convertValue(car, CarsInfoResponse.class);
     }
 
     @Override
     public void deleteCar(Long id) {
-        CarsInfoResponse car = getCar(id);
-        if (Objects.isNull(car)){
-            log.error("user is not delete");
-            return;
-        }
+        Car car = getCarDb(id);
+        if (car.getId() != null) {
+            car.setStatus(CarsStatus.DELETED);
+            car.setUpdatedAt(LocalDateTime.now());
+            carsRepo.save(car);
 
-        this.cars.remove(car);
+        } else {
+            log.error("User not found");
+        }
     }
 
     @Override
-    public List<CarsInfoResponse> getAllCars() {
-        return cars;
+    public Page<CarsInfoResponse> getAllCars(Integer page, Integer perPage, String sort, Sort.Direction order) {
+        Pageable request = PaginationUtil.getPageRequest(page, perPage, sort, order);
+        List<CarsInfoResponse> all = carsRepo.findAll(request)
+                .getContent()
+                .stream()
+                .map(car-> mapper.convertValue(car, CarsInfoResponse.class))
+                .collect(Collectors.toList());
+        return new PageImpl<>(all);
     }
-    //CarsInfoResponse
 
-
+    @Override
+    public CarsInfoResponse linkCarAndDriver(Long userId, Long carId) {
+        Car car = getCarDb(carId);
+        User user = userService.getUserDb(userId);
+        user.getCars().add(car);
+        userService.updateCarList(user);
+        car.setUser(user);
+        car = carsRepo.save(car);
+        UserInfoResponse userInfoResponse = mapper.convertValue(user, UserInfoResponse.class);
+        CarsInfoResponse carsInfoResponse = mapper.convertValue(car, CarsInfoResponse.class);
+        carsInfoResponse.setUser(userInfoResponse);
+        return carsInfoResponse;
+    }
 }
+
+

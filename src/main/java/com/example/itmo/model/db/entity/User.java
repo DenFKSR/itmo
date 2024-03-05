@@ -2,6 +2,7 @@ package com.example.itmo.model.db.entity;
 
 import com.example.itmo.model.enums.Gender;
 import com.example.itmo.model.enums.UserStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -37,6 +39,10 @@ public class User {
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
-
+    @Enumerated(EnumType.STRING)
     UserStatus status;
+
+    @OneToMany
+    @JsonManagedReference(value = "driver_cars")
+    List<Car> cars;
 }

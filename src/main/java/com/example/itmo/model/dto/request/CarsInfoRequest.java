@@ -19,6 +19,6 @@ public class CarsInfoRequest {
     String model;
     String numRegistration;
     Engine typeEngine;
-    double engineСapacity;
+    Double engineСapacity;
 
 }

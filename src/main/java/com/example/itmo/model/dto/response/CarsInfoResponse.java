@@ -15,4 +15,5 @@ import lombok.experimental.SuperBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CarsInfoResponse extends CarsInfoRequest {
     Long id;
+    UserInfoResponse user;
 }
