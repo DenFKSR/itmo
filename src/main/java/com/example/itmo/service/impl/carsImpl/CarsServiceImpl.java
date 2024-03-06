@@ -1,8 +1,10 @@
 package com.example.itmo.service.impl.carsImpl;
 
+import com.example.itmo.exceptions.CustomException;
 import com.example.itmo.model.db.entity.Car;
 import com.example.itmo.model.db.entity.User;
 import com.example.itmo.model.db.repository.CarsRepo;
+import com.example.itmo.model.db.repository.UserRepo;
 import com.example.itmo.model.dto.request.CarsInfoRequest;
 import com.example.itmo.model.dto.response.CarsInfoResponse;
 import com.example.itmo.model.dto.response.UserInfoResponse;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,14 +29,23 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class CarsServiceImpl implements CarsService {
-
+private final UserRepo userRepo;
     private final CarsRepo carsRepo;
     private final ObjectMapper mapper;
     private final UserService userService;
 
+    public static final String ERR_MSG = "car not found";
 
     @Override
     public CarsInfoResponse createCar(CarsInfoRequest request) {
+        carsRepo.findByNumRegistration(request.getNumRegistration())
+                .ifPresent(car -> {
+                    throw new CustomException("Car already exists", HttpStatus.CONFLICT);//исключение:добавление повтор. пользователя
+                });
+
+
+
+
         Car car = mapper.convertValue(request, Car.class);
         car.setStatus(CarsStatus.CREATED);
         car.setCreatedAt(LocalDateTime.now());
@@ -42,7 +54,7 @@ public class CarsServiceImpl implements CarsService {
     }
 
     private Car getCarDb(Long id) {
-        return carsRepo.findById(id).orElse(new Car());
+        return carsRepo.findById(id).orElseThrow(() -> new CustomException(ERR_MSG, HttpStatus.NOT_FOUND));
     }
 
 
@@ -72,14 +84,13 @@ public class CarsServiceImpl implements CarsService {
     @Override
     public void deleteCar(Long id) {
         Car car = getCarDb(id);
-        if (car.getId() != null) {
+        carsRepo.findById(id).orElseThrow(() -> new CustomException(ERR_MSG, HttpStatus.NOT_FOUND));
             car.setStatus(CarsStatus.DELETED);
             car.setUpdatedAt(LocalDateTime.now());
             carsRepo.save(car);
 
-        } else {
-            log.error("User not found");
-        }
+
+
     }
 
     @Override
@@ -96,7 +107,9 @@ public class CarsServiceImpl implements CarsService {
     @Override
     public CarsInfoResponse linkCarAndDriver(Long userId, Long carId) {
         Car car = getCarDb(carId);
+        carsRepo.findById(carId).orElseThrow(() -> new CustomException(ERR_MSG, HttpStatus.NOT_FOUND));
         User user = userService.getUserDb(userId);
+        userRepo.findById(userId).orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
         user.getCars().add(car);
         userService.updateCarList(user);
         car.setUser(user);
@@ -105,6 +118,19 @@ public class CarsServiceImpl implements CarsService {
         CarsInfoResponse carsInfoResponse = mapper.convertValue(car, CarsInfoResponse.class);
         carsInfoResponse.setUser(userInfoResponse);
         return carsInfoResponse;
+    }
+
+    public List<CarsInfoResponse> getUserCar(Long id) {
+        User user = userService.getUserDb(id);
+        List<CarsInfoResponse> carsUser = user.getCars().stream()
+                .map(car -> {
+                    CarsInfoResponse carsInfoResponse = mapper.convertValue(car, CarsInfoResponse.class);
+                    carsInfoResponse.setUser(mapper.convertValue(user, UserInfoResponse.class));
+                    return carsInfoResponse;
+                })
+                .collect(Collectors.toList());
+
+        return carsUser;
     }
 }
 

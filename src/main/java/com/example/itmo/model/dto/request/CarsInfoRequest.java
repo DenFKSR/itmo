@@ -7,6 +7,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotEmpty;
+
 @Getter
 @Setter
 @SuperBuilder
@@ -17,6 +19,7 @@ import lombok.experimental.SuperBuilder;
 public class CarsInfoRequest {
     String nameBrand;
     String model;
+    @NotEmpty(message = "Registration number must be set")
     String numRegistration;
     Engine typeEngine;
     Double engineСapacity;

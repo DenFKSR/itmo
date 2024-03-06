@@ -8,10 +8,12 @@ import com.example.itmo.model.dto.request.UserInfoRequest;
 import com.example.itmo.model.dto.response.UserInfoResponse;
 import com.example.itmo.model.enums.UserStatus;
 import com.example.itmo.service.UserService;
+import com.example.itmo.service.impl.carsImpl.CarsService;
 import com.example.itmo.utils.PaginationUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInfoResponse createUser(UserInfoRequest request) {
+        String email = request.getEmail();
+
+        if (!EmailValidator.getInstance().isValid(email)){
+            throw  new CustomException("Invalid email", HttpStatus.BAD_REQUEST);
+        }
+
         userRepo.findByEmail(request.getEmail())
                 .ifPresent(user -> {
                     throw new CustomException("Email already exists", HttpStatus.CONFLICT);//исключение:добавление повтор. пользователя
@@ -97,16 +105,6 @@ public class UserServiceImpl implements UserService {
         return userRepo.save(user);
     }
 
-    public List<Car> getUserCar(Long id) {
 
-        if (getUserDb(id) != null) {
-            User user = getUserDb(id);
-            List<Car> newList = user.getCars();
-            return newList;
-        } else log.error("not found user");
-        return null;
-
-
-    }
 
 }

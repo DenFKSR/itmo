@@ -24,6 +24,7 @@ public interface UserService {
 
     User updateCarList(User user);
 
-    List<Car> getUserCar(Long id);
+
+
 }
 
