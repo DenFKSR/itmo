@@ -34,8 +34,6 @@ public class UserServiceImplTest {
     private UserServiceImpl userService;
     @Mock
     private UserRepo userRepo;
-    @InjectMocks
-    private CarsService carsService;
 
     @Spy
     private ObjectMapper mapper;

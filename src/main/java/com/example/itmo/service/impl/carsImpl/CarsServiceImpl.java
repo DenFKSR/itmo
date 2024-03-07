@@ -42,10 +42,6 @@ private final UserRepo userRepo;
                 .ifPresent(car -> {
                     throw new CustomException("Car already exists", HttpStatus.CONFLICT);//исключение:добавление повтор. пользователя
                 });
-
-
-
-
         Car car = mapper.convertValue(request, Car.class);
         car.setStatus(CarsStatus.CREATED);
         car.setCreatedAt(LocalDateTime.now());
@@ -66,7 +62,6 @@ private final UserRepo userRepo;
     @Override
     public CarsInfoResponse updateCar(Long id, CarsInfoRequest request) {
         Car car = getCarDb(id);
-        if (car.getId() != null) {
             car.setNameBrand(request.getNameBrand() == null ? car.getNameBrand() : request.getNameBrand());
             car.setModel(request.getModel() == null ? car.getModel() : request.getModel());
             car.setNumRegistration(request.getNumRegistration() == null ? car.getNumRegistration() : request.getNumRegistration());
@@ -75,9 +70,6 @@ private final UserRepo userRepo;
             car.setStatus(CarsStatus.UPDATED);
             car.setUpdatedAt(LocalDateTime.now());
             car = carsRepo.save(car);
-        } else {
-            log.error("User not found");
-        }
         return mapper.convertValue(car, CarsInfoResponse.class);
     }
 
@@ -88,9 +80,6 @@ private final UserRepo userRepo;
             car.setStatus(CarsStatus.DELETED);
             car.setUpdatedAt(LocalDateTime.now());
             carsRepo.save(car);
-
-
-
     }
 
     @Override

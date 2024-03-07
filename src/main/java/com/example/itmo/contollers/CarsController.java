@@ -61,7 +61,7 @@ public class CarsController {
 
     @GetMapping("/find_cars/{id}")
     @Operation(summary = "Получение автомобиля пользователя")
-    public List<Car> getUserCar (@PathVariable Long id){
+    public List<CarsInfoResponse> getUserCar (@PathVariable Long id){
         return carsService.getUserCar(id) ;
     }
 

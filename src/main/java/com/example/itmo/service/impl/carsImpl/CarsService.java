@@ -16,5 +16,5 @@ public interface CarsService {
     Page<CarsInfoResponse> getAllCars(Integer page, Integer perPage, String sort, Sort.Direction order);
 
     CarsInfoResponse linkCarAndDriver(Long userId, Long carId);
-    List<Car> getUserCar(Long id);
+    List<CarsInfoResponse> getUserCar(Long id);
 }
